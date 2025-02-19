@@ -9,6 +9,7 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://backend:3001
+      - HOSTNAME=0.0.0.0
     depends_on:
       - backend
 
@@ -20,4 +21,17 @@ services:
       - "3001:3001"
     environment:
       - PORT=3001
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ../backend:/app
+      - /app/node_modules
+    depends_on:
+      - whisper
+
+  whisper:
+    build:
+      context: ..
+      dockerfile: docker/whisper.Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./whisper_service.py:/app/whisper_service.py

@@ -1,101 +1,115 @@
+'use client';
+
+import React, { useState, useRef } from 'react';
 import Image from "next/image";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [recording, setRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [transcription, setTranscription] = useState('');
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        setAudioBlob(blob);
+        audioChunksRef.current = [];
+      };
+      mediaRecorderRef.current.start();
+      setRecording(true);
+    } catch (error) {
+      console.error('Error accessing audio devices.', error);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && recording) {
+      mediaRecorderRef.current.stop();
+      setRecording(false);
+    }
+  };
+
+  const sendAudio = async () => {
+    if (!audioBlob) return;
+    const formData = new FormData();
+    formData.append('file', audioBlob, 'audio.wav');
+    try {
+      const res = await fetch('http://localhost:3001/transcribe', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      setTranscription(data.transcription || JSON.stringify(data));
+    } catch (err) {
+      console.error(err);
+      setTranscription('Error during transcription');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto">
+        <div className="bg-white shadow rounded-lg p-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-8">音声文字起こしアプリ</h1>
+          
+          <div className="space-y-6">
+            <div className="flex justify-center">
+              <button
+                onClick={recording ? stopRecording : startRecording}
+                className={`px-6 py-3 rounded-full font-semibold text-white shadow-lg transform transition-all duration-200 ${
+                  recording 
+                    ? 'bg-red-500 hover:bg-red-600 animate-pulse'
+                    : 'bg-blue-500 hover:bg-blue-600'
+                }`}
+              >
+                {recording ? '録音停止' : '録音開始'}
+              </button>
+            </div>
+
+            <div className="flex justify-center">
+              <button
+                onClick={sendAudio}
+                disabled={!audioBlob}
+                className={`px-6 py-3 rounded-full font-semibold shadow-lg transform transition-all duration-200 ${
+                  audioBlob
+                    ? 'bg-green-500 hover:bg-green-600 text-white'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                文字起こしを開始
+              </button>
+            </div>
+
+            <div className="mt-8">
+              <h3 className="text-lg font-semibold text-gray-700 mb-4">文字起こし結果</h3>
+              <div className="bg-gray-50 rounded-lg p-4 min-h-[100px]">
+                {transcription ? (
+                  <p className="text-gray-800">{transcription}</p>
+                ) : (
+                  <p className="text-gray-400 text-center">
+                    ここに文字起こし結果が表示されます
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {recording && (
+          <div className="mt-4 text-center text-sm text-gray-500">
+            録音中... マイクに向かって話してください
+          </div>
+        )}
+      </div>
     </div>
   );
 }
