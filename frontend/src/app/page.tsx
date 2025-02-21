@@ -1,101 +1,73 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect } from 'react';
+import { useAudioRecorder } from '../hooks/useAudioRecorder';
+import { getRandomStandardText } from '../constants/texts';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [standardText, setStandardText] = useState("");
+  const { isRecording, startRecording, stopRecording, audioData, audioUrl, recordingTime } = useAudioRecorder();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    setStandardText(getRandomStandardText());
+  }, []);
+
+  const handleRecordClick = async () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      await startRecording();
+    }
+  };
+
+  const handleNewText = () => {
+    setStandardText(getRandomStandardText());
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <main className="w-[1440px] h-[1024px] relative bg-white overflow-hidden mx-auto">
+      <h1 className="w-[517px] h-[71px] absolute left-[461px] top-[58px] text-black text-[64px] font-normal">
+        関西人チェッカー
+      </h1>
+      
+      <div className="w-[667px] h-[271px] absolute left-[386px] top-[218px] bg-[#d9d9d9] flex flex-col items-center justify-center gap-4">
+        <p className="text-[48px] font-normal px-6 text-center">
+          {standardText}
+        </p>
+        <button
+          onClick={handleNewText}
+          className="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition-colors text-lg"
+        >
+          別の文章に変更
+        </button>
+      </div>
+
+      <p className="absolute left-[504px] top-[576px] text-black text-5xl font-normal">
+        関西弁に翻訳してね
+      </p>
+
+      <div className="absolute left-[581px] top-[680px] flex flex-col items-center gap-4">
+        <div className="text-2xl font-normal text-gray-700">
+          {isRecording && `録音中: ${formatTime(recordingTime)}`}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        <button 
+          onClick={handleRecordClick}
+          className={`w-[265px] h-[167px] bg-[#d9d9d9] rounded-full flex items-center justify-center transition-colors 
+            ${isRecording ? 'bg-red-400 animate-pulse' : ''} 
+            hover:bg-gray-300`}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+          <span className="text-black text-[64px] font-normal">録音</span>
+        </button>
+        {audioUrl && (
+          <audio controls src={audioUrl} className="mt-4 w-[265px]" />
+        )}
+      </div>
+    </main>
   );
 }

@@ -9,6 +9,14 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://backend:3001
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - NEXT_WEBPACK_USEPOLLING=1
+      - NODE_ENV=development
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+      - /app/.next
     depends_on:
       - backend
 
@@ -21,3 +29,7 @@ services:
     environment:
       - PORT=3001
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ../backend:/app
+      - /app/node_modules
+      - /app/dist
