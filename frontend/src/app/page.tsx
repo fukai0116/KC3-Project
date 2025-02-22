@@ -41,7 +41,7 @@ export default function Home() {
 
   return (
     <div>
-      {isTranscribing && <Loading />}
+      {isTranscribing && <Loading message="分析中..." />}
       <main className="min-h-screen w-full max-w-7xl mx-auto px-4 py-8 flex flex-col items-center justify-start gap-8 relative">
         <h1 className="text-4xl md:text-6xl font-normal text-center">
           関西人チェッカー
