@@ -17,9 +17,9 @@ export default function Home() {
 
   useEffect(() => {
     if (transcribedText) {
-      router.push(`/result?text=${encodeURIComponent(transcribedText)}`);
+      router.push(`/result?text=${encodeURIComponent(transcribedText)}&standard=${encodeURIComponent(standardText)}`);
     }
-  }, [transcribedText, router]);
+  }, [transcribedText, router, standardText]);
 
   const handleRecordClick = async () => {
     if (isRecording) {
