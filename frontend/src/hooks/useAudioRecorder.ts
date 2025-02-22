@@ -7,6 +7,9 @@ export const useAudioRecorder = () => {
   const [audioData, setAudioData] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [transcribedText, setTranscribedText] = useState<string>('');
+  const [isTranscribing, setIsTranscribing] = useState(false);
+
   let timeInterval: NodeJS.Timeout | null = null;
 
   const startRecording = useCallback(async () => {
@@ -50,6 +53,31 @@ export const useAudioRecorder = () => {
     }
   }, [mediaRecorder, audioStream]);
 
+  const transcribeAudio = async () => {
+    if (!audioData) return;
+
+    setIsTranscribing(true);
+    try {
+      const formData = new FormData();
+      formData.append('audio', audioData);
+
+      const response = await fetch('http://localhost:3001/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (data.text) {
+        setTranscribedText(data.text);
+        console.log('Transcribed text:', data.text);
+      }
+    } catch (error) {
+      console.error('Error transcribing audio:', error);
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
   useEffect(() => {
     return () => {
       if (timeInterval) {
@@ -67,6 +95,9 @@ export const useAudioRecorder = () => {
     audioUrl,
     recordingTime,
     startRecording,
-    stopRecording
+    stopRecording,
+    transcribeAudio,
+    transcribedText,
+    isTranscribing
   };
 };
