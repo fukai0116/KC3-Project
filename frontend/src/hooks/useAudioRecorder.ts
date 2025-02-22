@@ -1,21 +1,18 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 export const useAudioRecorder = () => {
   const [isRecording, setIsRecording] = useState(false);
-  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [audioData, setAudioData] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [transcribedText, setTranscribedText] = useState<string>('');
-  const [isTranscribing, setIsTranscribing] = useState(false);
-
-  let timeInterval: NodeJS.Timeout | null = null;
+  const [transcribedText, setTranscribedText] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const mediaRecorder = useRef<MediaRecorder | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const startRecording = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      setAudioStream(stream);
 
       const recorder = new MediaRecorder(stream);
       const chunks: BlobPart[] = [];
@@ -29,12 +26,12 @@ export const useAudioRecorder = () => {
       };
 
       recorder.start();
-      setMediaRecorder(recorder);
+      mediaRecorder.current = recorder;
       setIsRecording(true);
       setRecordingTime(0);
       
       // Start timer
-      timeInterval = setInterval(() => {
+      timerRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1);
       }, 1000);
     } catch (error) {
@@ -43,20 +40,20 @@ export const useAudioRecorder = () => {
   }, []);
 
   const stopRecording = useCallback(() => {
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-      mediaRecorder.stop();
-      audioStream?.getTracks().forEach(track => track.stop());
+    if (mediaRecorder.current && mediaRecorder.current.state !== 'inactive') {
+      mediaRecorder.current.stop();
+      mediaRecorder.current.stream.getTracks().forEach(track => track.stop());
       setIsRecording(false);
-      if (timeInterval) {
-        clearInterval(timeInterval);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
       }
     }
-  }, [mediaRecorder, audioStream]);
+  }, []);
 
   const transcribeAudio = async () => {
     if (!audioData) return;
 
-    setIsTranscribing(true);
+    setIsProcessing(true);
     try {
       const formData = new FormData();
       formData.append('audio', audioData);
@@ -69,19 +66,19 @@ export const useAudioRecorder = () => {
       const data = await response.json();
       if (data.text) {
         setTranscribedText(data.text);
-        console.log('Transcribed text:', data.text);
+      } else {
+        throw new Error('No transcription received');
       }
     } catch (error) {
-      console.error('Error transcribing audio:', error);
-    } finally {
-      setIsTranscribing(false);
+      console.error('Transcription error:', error);
+      setIsProcessing(false);
     }
   };
 
   useEffect(() => {
     return () => {
-      if (timeInterval) {
-        clearInterval(timeInterval);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
       }
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
@@ -91,13 +88,13 @@ export const useAudioRecorder = () => {
 
   return {
     isRecording,
+    startRecording,
+    stopRecording,
     audioData,
     audioUrl,
     recordingTime,
-    startRecording,
-    stopRecording,
     transcribeAudio,
     transcribedText,
-    isTranscribing
+    isProcessing,
   };
 };
