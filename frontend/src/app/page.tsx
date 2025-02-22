@@ -6,7 +6,7 @@ import { getRandomStandardText } from '../constants/texts';
 
 export default function Home() {
   const [standardText, setStandardText] = useState("");
-  const { isRecording, startRecording, stopRecording, audioData, audioUrl, recordingTime } = useAudioRecorder();
+  const { isRecording, startRecording, stopRecording, audioData, audioUrl, recordingTime, transcribeAudio, transcribedText, isTranscribing } = useAudioRecorder();
 
   useEffect(() => {
     setStandardText(getRandomStandardText());
@@ -68,6 +68,23 @@ export default function Home() {
           <audio controls src={audioUrl} className="w-48 md:w-64 mt-4" />
         )}
       </div>
+
+      {!isRecording && recordingTime > 0 && (
+        <button
+          onClick={transcribeAudio}
+          disabled={isTranscribing}
+          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-full disabled:opacity-50"
+        >
+          {isTranscribing ? '文字起こし中...' : '文字起こしを開始'}
+        </button>
+      )}
+
+      {transcribedText && (
+        <div className="mt-8 p-4 bg-gray-100 rounded-lg max-w-2xl w-full">
+          <h2 className="text-xl font-semibold mb-2">文字起こし結果:</h2>
+          <p className="whitespace-pre-wrap">{transcribedText}</p>
+        </div>
+      )}
     </main>
   );
 }
