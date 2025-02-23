@@ -9,7 +9,17 @@ import { Loading } from '../components/Loading';
 export default function Home() {
   const router = useRouter();
   const [standardText, setStandardText] = useState("");
-  const { isRecording, startRecording, stopRecording, audioData, audioUrl, recordingTime, transcribeAudio, transcribedText, isTranscribing } = useAudioRecorder();
+  const { 
+    isRecording, 
+    startRecording, 
+    stopRecording, 
+    audioData, 
+    audioUrl, 
+    recordingTime, 
+    transcribeAudio, 
+    transcribedText, 
+    isProcessing: isTranscribing 
+  } = useAudioRecorder();
 
   useEffect(() => {
     setStandardText(getRandomStandardText());
@@ -17,7 +27,8 @@ export default function Home() {
 
   useEffect(() => {
     if (transcribedText) {
-      router.push(`/result?text=${encodeURIComponent(transcribedText)}&standard=${encodeURIComponent(standardText)}`);
+      const url = `/result?text=${encodeURIComponent(transcribedText)}&standard=${encodeURIComponent(standardText)}`;
+      router.push(url);
     }
   }, [transcribedText, router, standardText]);
 
