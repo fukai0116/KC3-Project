@@ -9,7 +9,17 @@ import { Loading } from '../components/Loading';
 export default function Home() {
   const router = useRouter();
   const [standardText, setStandardText] = useState("");
-  const { isRecording, startRecording, stopRecording, audioData, audioUrl, recordingTime, transcribeAudio, transcribedText, isTranscribing } = useAudioRecorder();
+  const { 
+    isRecording, 
+    startRecording, 
+    stopRecording, 
+    audioData, 
+    audioUrl, 
+    recordingTime, 
+    transcribeAudio, 
+    transcribedText, 
+    isProcessing: isTranscribing 
+  } = useAudioRecorder();
 
   useEffect(() => {
     setStandardText(getRandomStandardText());
@@ -17,9 +27,10 @@ export default function Home() {
 
   useEffect(() => {
     if (transcribedText) {
-      router.push(`/result?text=${encodeURIComponent(transcribedText)}`);
+      const url = `/result?text=${encodeURIComponent(transcribedText)}&standard=${encodeURIComponent(standardText)}`;
+      router.push(url);
     }
-  }, [transcribedText, router]);
+  }, [transcribedText, router, standardText]);
 
   const handleRecordClick = async () => {
     if (isRecording) {
@@ -41,7 +52,7 @@ export default function Home() {
 
   return (
     <div>
-      {isTranscribing && <Loading />}
+      {isTranscribing && <Loading message="分析中..." />}
       <main className="min-h-screen w-full max-w-7xl mx-auto px-4 py-8 flex flex-col items-center justify-start gap-8 relative">
         <h1 className="text-4xl md:text-6xl font-normal text-center">
           関西人チェッカー
