@@ -5,11 +5,24 @@ import { useRouter } from 'next/navigation';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { getRandomStandardText } from '../constants/texts';
 import { Loading } from '../components/Loading';
+import { AudioWaveform } from '../components/AudioWaveform';
 
 export default function Home() {
   const router = useRouter();
   const [standardText, setStandardText] = useState("");
-  const { isRecording, startRecording, stopRecording, audioData, audioUrl, recordingTime, transcribeAudio, transcribedText, isTranscribing } = useAudioRecorder();
+  const [error, setError] = useState<string | null>(null);
+  const { 
+    isRecording, 
+    startRecording, 
+    stopRecording, 
+    audioData, 
+    audioUrl, 
+    recordingTime, 
+    transcribeAudio, 
+    transcribedText, 
+    isProcessing: isTranscribing,
+    waveformData
+  } = useAudioRecorder();
 
   useEffect(() => {
     setStandardText(getRandomStandardText());
@@ -17,7 +30,8 @@ export default function Home() {
 
   useEffect(() => {
     if (transcribedText) {
-      router.push(`/result?text=${encodeURIComponent(transcribedText)}&standard=${encodeURIComponent(standardText)}`);
+      const url = `/result?text=${encodeURIComponent(transcribedText)}&standard=${encodeURIComponent(standardText)}`;
+      router.push(url);
     }
   }, [transcribedText, router, standardText]);
 
@@ -31,6 +45,15 @@ export default function Home() {
 
   const handleNewText = () => {
     setStandardText(getRandomStandardText());
+  };
+
+  const handleTranscribe = async () => {
+    try {
+      setError(null);
+      await transcribeAudio();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '音声の文字起こしに失敗しました');
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -75,11 +98,25 @@ export default function Home() {
           >
             <span className="text-3xl md:text-5xl font-normal">録音</span>
           </button>
+
+          {/* 波形表示の追加 */}
+          <div className="w-full max-w-2xl mt-4">
+            <AudioWaveform
+              audioData={waveformData}
+              isRecording={isRecording}
+            />
+          </div>
         </div>
+
+        {error && (
+          <div className="w-full max-w-2xl p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            <p className="text-center">{error}</p>
+          </div>
+        )}
 
         {!isRecording && recordingTime > 0 && (
           <button
-            onClick={transcribeAudio}
+            onClick={handleTranscribe}
             disabled={isTranscribing}
             className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-full disabled:opacity-50"
           >
